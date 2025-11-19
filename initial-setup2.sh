@@ -56,10 +56,8 @@ sudo dpkg-reconfigure unattended-upgrades
 # Настройка автоматических обновлений
 
 # Редактируем конфигурацию:
-sudo nano /etc/apt/apt.conf.d/20auto-upgrades
-
-# Добавляем:
 sudo echo "APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 APT::Periodic::AutocleanInterval "7";" >> /etc/apt/apt.conf.d/20auto-upgrades
+
 
