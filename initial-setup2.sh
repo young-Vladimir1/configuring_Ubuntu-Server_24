@@ -7,9 +7,8 @@ sudo apt-get install -y curl wget git htop nano vim ufw fail2ban
 
 # Создание пользователя myuser
 sudo adduser --gecos "" --disabled-password myuser
+echo "myuser:1234" | sudo chpasswd
 sudo usermod -aG sudo myuser
-sudo passwd
-echo "1234"
 
 # Настройка SSH
 sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
@@ -48,7 +47,6 @@ port = 2222
 filter = sshd
 logpath = /var/log/auth.log
 maxretry = 3
-bantime = 3600
 EOF
 
 sudo systemctl enable fail2ban
@@ -56,7 +54,6 @@ sudo systemctl start fail2ban
 
 # Настройка автоматических обновлений
 sudo apt install -y unattended-upgrades
-sudo dpkg-reconfigure -plow unattended-upgrades -f noninteractive
 
 # Настройка конфигурации обновлений
 sudo tee /etc/apt/apt.conf.d/20auto-upgrades > /dev/null << EOF
