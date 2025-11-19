@@ -1,47 +1,37 @@
 #!/bin/bash
+echo "Начальная настройка Ubuntu Server"
 
-# Скрипт начальной настройки Ubuntu Server
-# Автоматизирует базовые настройки безопасности
+# Обновление системы
+sudo apt-get update && apt-get upgrade -y
+apt-get install -y curl wget git htop nano vim ufw fail2ban
 
-echo "=== Начальная настройка Ubuntu Server ==="
-
-# Шаг 1: Обновление системы
-echo "1. Обновление пакетов..."
-apt update && apt upgrade -y
-apt install -y curl wget git htop nano vim ufw fail2ban
-
-# Шаг 2: Создание пользователя myuser
-echo "2. Создание пользователя myuser..."
-adduser --gecos "" myuser
+# Создание пользователя myuser
+adduser myuser
 usermod -aG sudo myuser
 
-# Шаг 3: Настройка SSH
-echo "3. Настройка SSH..."
+# Настройка SSH
 sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
 
-sudo tee /etc/ssh/sshd_config > /dev/null << EOF
-Port 2222
+sudo echo "Port 2222
 PermitRootLogin no
 PasswordAuthentication no
 PubkeyAuthentication yes
 MaxAuthTries 3
 ClientAliveInterval 300
-ClientAliveCountMax 2
-EOF
+ClientAliveCountMax 2" >> /etc/ssh/sshd_config
 
 sudo systemctl restart ssh
 
-# Шаг 4: Настройка фаервола
-echo "4. Настройка UFW..."
+# Настройка фаервола
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-sudo ufw allow 2222/tcp
-sudo ufw --force enable
+sudo ufw allow 2222/tcp # SSH на новом порту
+sudo ufw allow 80/tcp # HTTP
+sudo ufw allow 443/tcp # HTTPS
+sudo ufw enable
 
-# Шаг 5: Настройка fail2ban
-echo "5. Настройка fail2ban..."
-sudo tee /etc/fail2ban/jail.local > /dev/null << EOF
-[DEFAULT]
+# Настройка fail2ban
+sudo echo "[DEFAULT]
 bantime = 3600
 findtime = 600
 maxretry = 5
@@ -53,29 +43,23 @@ port = 2222
 filter = sshd
 logpath = /var/log/auth.log
 maxretry = 3
-bantime = 3600
-EOF
+bantime = 3600" >> /etc/fail2ban/jail.local
+
 
 sudo systemctl enable fail2ban
 sudo systemctl start fail2ban
 
-# Шаг 6: Настройка автоматических обновлений
-echo "6. Настройка автоматических обновлений..."
+# Настройка автоматических обновлений
 sudo apt install -y unattended-upgrades
-sudo dpkg-reconfigure -plow unattended-upgrades
+sudo dpkg-reconfigure unattended-upgrades
 
-# Шаг 7: Настройка временной зоны
-echo "7. Настройка временной зоны..."
-sudo timedatectl set-timezone Europe/Moscow
-sudo timedatectl set-ntp true
+# Настройка автоматических обновлений
 
-echo "=== Настройка завершена! ==="
-echo "Важная информация:"
-echo "- Создан пользователь: myuser"
-echo "- SSH теперь на порту: 2222"
-echo "- Вход по root запрещен"
-echo "- Разрешена только аутентификация по ключам"
-echo ""
-echo "Не забудьте добавить свой SSH-ключ для пользователя myuser!"
-echo "Команда для копирования ключа:"
-echo "ssh-copy-id -p 2222 myuser@IP_АДРЕС_СЕРВЕРА"
+# Редактируем конфигурацию:
+sudo nano /etc/apt/apt.conf.d/20auto-upgrades
+
+# Добавляем:
+sudo echo "APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";" >> /etc/apt/apt.conf.d/20auto-upgrades
+
